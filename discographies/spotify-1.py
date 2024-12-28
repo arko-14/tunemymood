@@ -145,8 +145,8 @@ class SpotifyScraper:
 
 def main():
     # Add your Spotify API credentials here
-    CLIENT_ID = "5872deacb917467c97db6e999c4bd7d7"
-    CLIENT_SECRET = "b1a4c90b046e45b1b94ede8ec4b45a47"
+    CLIENT_ID = "Your spotify client ID"
+    CLIENT_SECRET = "YOUR SPOTIFY CLIENT-SECRET"
     
     scraper = SpotifyScraper(client_id=CLIENT_ID, client_secret=CLIENT_SECRET)
     
