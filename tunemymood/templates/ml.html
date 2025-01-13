@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Model - Under Construction | Tune My Mood</title>
+    <meta name="description" content="Our ML model is under construction">
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+20:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="min-h-screen flex items-center justify-center bg-gradient p-4" style="background: url('/static/images/default-bg.png') center/cover no-repeat #1a1a1a;">
+        <div class="w-full max-w-3xl p-8 text-center">
+            <h1 class="title mb-8">TUNE MY MOOD</h1>
+            <div class="bg-black bg-opacity-50 p-8 rounded-lg">
+                <h2 class="text-3xl text-cyan mb-4">🚧 Under Construction 🚧</h2>
+                <p class="text-white text-xl mb-6">Our Machine Learning model is currently being developed to provide even better music recommendations based on your mood ratings!</p>
+                <p class="text-white-80 mb-8">Check back soon for exciting updates!</p>
+                <a href="{{ url_for('index') }}" class="primary-button inline-block">Back to Home</a>
+            </div>
+        </div>
+    </main>
+</body>
+</html>
