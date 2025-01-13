@@ -1,1 +1,2 @@
-web: gunicorn tunemymood.app:app
+web: gunicorn wsgi:application
+
