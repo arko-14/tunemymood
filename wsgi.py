@@ -5,4 +5,6 @@ import os
 sys.path.insert(0, '/home/runner/work/tunemymood/tunemymood')
 
 
-from tunemymood import app as application
+from app import create_app
+
+application = create_app()
