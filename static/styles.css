@@ -54,6 +54,7 @@
     font-size: 3.75rem;
     margin-bottom: 3rem;
     text-align: center;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
 .text-white {
@@ -100,7 +101,14 @@
     border-radius: 0.5rem;
     background-color: rgba(255, 255, 255, 0.1);
     color: white;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: all 0.3s ease;
+}
+
+.input-field:focus {
+    outline: none;
+    border-color: #ff2e63;
+    background-color: rgba(255, 255, 255, 0.15);
 }
 
 .input-field::placeholder {
@@ -117,13 +125,15 @@
     color: white;
     border: none;
     cursor: pointer;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .search-button:hover,
 .primary-button:hover,
 .share-button:hover {
     transform: scale(1.05);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
 .share-button {
@@ -143,7 +153,7 @@
     color: white;
     border-radius: 0.5rem;
     text-decoration: none;
-    transition: background-color 0.3s;
+    transition: all 0.3s ease;
 }
 
 .feedback-button:hover {
@@ -154,6 +164,12 @@
 .grid-container {
     display: grid;
     gap: 2rem;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 15px;
+    padding: 2rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 @media (min-width: 768px) {
@@ -167,21 +183,29 @@
     display: flex;
     align-items: center;
     gap: 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    padding: 1.25rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .mood-name {
     width: 6rem;
     text-align: left;
     color: white;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-weight: 500;
 }
 
 .slider {
     flex: 1;
     height: 0.5rem;
     border-radius: 0.5rem;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(255, 255, 255, 0.15);
     -webkit-appearance: none;
     appearance: none;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .slider::-webkit-slider-thumb {
@@ -191,33 +215,30 @@
     border-radius: 50%;
     background-color: #ff2e63;
     cursor: pointer;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(255, 255, 255, 0.8);
 }
 
 .mood-value {
     width: 3rem;
     text-align: center;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: rgba(0, 0, 0, 0.4);
     border-radius: 0.25rem;
     padding: 0.25rem 0.5rem;
     color: white;
-    border: none;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    font-weight: 500;
 }
 
-/* Share buttons container */
-.share-buttons {
-    display: flex;
-    justify-content: center;
-    gap: 1rem;
-}
-
+/* Artist Image Container and Overlay */
 #artistImageContainer {
-    position: fixed;  /* Changed from absolute to fixed */
+    position: fixed;
     top: 0;
     right: 0;
     bottom: 0;
     left: 0;
-    width: 100vw;     /* Full viewport width */
-    height: 100vh;    /* Full viewport height */
+    width: 100vw;
+    height: 100vh;
     z-index: 0;
     opacity: 0.8;
     background-size: cover;
@@ -229,24 +250,50 @@
     backface-visibility: hidden;
 }
 
-#artistImage {
-    display: none; /* Hide the actual img element since we're using background-image */
-}
-
-/* Rating Page Styles */
-.rating-page-container {
-    position: relative;
+.gradient-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.95) 0%,
+        rgba(0, 0, 0, 0.8) 25%,
+        rgba(0, 0, 0, 0.8) 75%,
+        rgba(0, 0, 0, 0.95) 100%
+    );
     z-index: 1;
-    background-color: transparent;
-    width: 100vw;
-    min-height: 100vh;
+    pointer-events: none;
 }
 
+/* Rating Page Content */
 .rating-page-content {
     position: relative;
     z-index: 2;
     width: 100%;
     height: 100%;
+    padding: 2rem;
+}
+
+/* Share buttons container */
+.share-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+/* Error message */
+.error-message {
+    color: #dc3545;
+    background-color: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    text-align: center;
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
 }
 
 /* Utility classes */
@@ -309,4 +356,9 @@
 .my-12 {
     margin-top: 3rem;
     margin-bottom: 3rem;
+}
+
+/* Hover effects */
+.hover\:text-cyan-300:hover {
+    color: #67e8f9;
 }
