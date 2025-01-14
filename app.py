@@ -1,20 +1,22 @@
 from flask import Flask, render_template, request, jsonify
-import sqlite3
+import psycopg2
+from psycopg2.extras import DictCursor
 import os
-
 
 app = Flask(__name__)
 
 class SongRatingManager:
-    def __init__(self, db_path=None):
-        # Use environment variable or default to a relative path
-        self.db_path = db_path or os.environ.get('DATABASE_URL', 'instance/songs db.db')
-        
-        # Create instance directory if it doesn't exist
-        os.makedirs('instance', exist_ok=True)
+    def __init__(self):
+        self.db_config = {
+            'dbname': 'songsdb_vfc3',
+            'user': 'songsdb_vfc3_user',
+            'password': 'xnHayWhq3pxTVOyDmyZZL2O32cm8fqOl',
+            'host': 'dpg-cu2jt89opnds738l28f0-a.oregon-postgres.render.com',
+            'port': '5432'
+        }
 
     def get_db_connection(self):
-        return sqlite3.connect(self.db_path)
+        return psycopg2.connect(**self.db_config)
 
     def update_song_rating(self, artist, song, ratings_string):
         # Convert inputs to lowercase
@@ -26,13 +28,18 @@ class SongRatingManager:
 
         try:
             # Get current table structure
-            cursor.execute("PRAGMA table_info(merged_songs)")
-            columns = [column[1] for column in cursor.fetchall()]
+            cursor.execute("""
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = 'merged_songs'
+                ORDER BY ordinal_position;
+            """)
+            columns = [column[0] for column in cursor.fetchall()]
             
             # Get current ratings for this song
             cursor.execute("""
                 SELECT * FROM merged_songs 
-                WHERE LOWER(Artist) = ? AND LOWER(Song) = ?
+                WHERE LOWER(artist) = %s AND LOWER(song) = %s
             """, (artist, song))
             existing_row = cursor.fetchone()
             
@@ -41,18 +48,22 @@ class SongRatingManager:
 
             # Find the next available rating column
             next_rating_num = 1
-            while f'R{next_rating_num}' in columns:
-                if existing_row[columns.index(f'R{next_rating_num}')] is None:
+            while f'r{next_rating_num}' in columns:
+                if existing_row[columns.index(f'r{next_rating_num}')] is None:
                     break
                 next_rating_num += 1
 
             # Add new rating column if needed
-            if f'R{next_rating_num}' not in columns:
-                cursor.execute(f"ALTER TABLE merged_songs ADD COLUMN R{next_rating_num} TEXT")
+            if f'r{next_rating_num}' not in columns:
+                cursor.execute(f'ALTER TABLE merged_songs ADD COLUMN r{next_rating_num} TEXT')
                 conn.commit()
 
             # Update the rating
-            update_query = f"UPDATE merged_songs SET R{next_rating_num} = ? WHERE LOWER(Artist) = ? AND LOWER(Song) = ?"
+            update_query = f"""
+                UPDATE merged_songs 
+                SET r{next_rating_num} = %s 
+                WHERE LOWER(artist) = %s AND LOWER(song) = %s
+            """
             cursor.execute(update_query, (ratings_string, artist, song))
             conn.commit()
 
@@ -70,6 +81,7 @@ class SongRatingManager:
             conn.rollback()
             raise Exception(f"Error updating rating: {str(e)}")
         finally:
+            cursor.close()
             conn.close()
 
     def get_song_ratings(self, artist, song):
@@ -78,25 +90,23 @@ class SongRatingManager:
         song = song.lower()
         
         conn = self.get_db_connection()
-        cursor = conn.cursor()
+        cursor = conn.cursor(cursor_factory=DictCursor)
 
         try:
             cursor.execute("""
                 SELECT * FROM merged_songs 
-                WHERE LOWER(Artist) = ? AND LOWER(Song) = ?
+                WHERE LOWER(artist) = %s AND LOWER(song) = %s
             """, (artist, song))
             result = cursor.fetchone()
+            
             if result is None:
                 return None
                 
-            # Get column names
-            cursor.execute("PRAGMA table_info(merged_songs)")
-            columns = [column[1] for column in cursor.fetchall()]
-            
-            # Create a dictionary with column names and values
-            result_dict = dict(zip(columns, result))
+            # Convert result to dictionary
+            result_dict = dict(result)
             return {'exists': True, 'data': result_dict}
         finally:
+            cursor.close()
             conn.close()
 
     def get_artist_image(self, artist):
@@ -107,10 +117,14 @@ class SongRatingManager:
         cursor = conn.cursor()
 
         try:
-            cursor.execute("SELECT link FROM Artists WHERE LOWER(artist) = ?", (artist,))
+            cursor.execute("""
+                SELECT link FROM "Artists" 
+                WHERE LOWER(artist) = %s
+            """, (artist,))
             result = cursor.fetchone()
             return result[0] if result else None
         finally:
+            cursor.close()
             conn.close()
 
 rating_manager = SongRatingManager()
@@ -149,10 +163,44 @@ def rate_song():
         return jsonify({'message': message, 'artist': artist, 'song': song})
     except Exception as e:
         return jsonify({'error': str(e)}), 400
-    
+
 @app.route('/ml')
 def ml():
     return render_template('ml.html')    
 
+def verify_database_structure():
+    conn = rating_manager.get_db_connection()
+    cursor = conn.cursor()
+    try:
+        # Check merged_songs table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'merged_songs'
+            ORDER BY ordinal_position;
+        """)
+        merged_songs_columns = [col[0] for col in cursor.fetchall()]
+        print("merged_songs columns:", merged_songs_columns)
+
+        # Check Artists table
+        cursor.execute("""
+            SELECT column_name 
+            FROM information_schema.columns 
+            WHERE table_name = 'artists'
+            ORDER BY ordinal_position;
+        """)
+        artists_columns = [col[0] for col in cursor.fetchall()]
+        print("Artists columns:", artists_columns)
+
+        # Check for existing ratings
+        cursor.execute("SELECT COUNT(*) FROM merged_songs WHERE r1 IS NOT NULL")
+        ratings_count = cursor.fetchone()[0]
+        print(f"Number of songs with ratings: {ratings_count}")
+
+    finally:
+        cursor.close()
+        conn.close()
+
 if __name__ == '__main__':
+    verify_database_structure()  # Run verification before starting the app
     app.run(debug=True)
