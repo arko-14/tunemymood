@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tune My Mood</title>
+    <meta name="description" content="Rate songs based on their mood">
+    <link href="https://fonts.googleapis.com/css2?family=Jersey+20:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <main class="min-h-screen flex items-center justify-center bg-gradient p-4"style="background: url('/static/images/default-bg.png') center/cover no-repeat #1a1a1a;">
+       
+        <div id="searchPage" class="w-full max-w-3xl p-8 text-center">
+            <h1 class="title">TUNE MY MOOD</h1>
+            <form id="searchForm" class="flex-form">
+                <input type="text" name="artist" placeholder="Artist Name" required class="input-field"/>
+                <input type="text" name="song" placeholder="Song Name" required class="input-field"/>
+                <button type="submit" class="search-button">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </button>
+            </form>
+            <a href="https://docs.google.com/forms/d/e/1FAIpQLScGcO7RIkIG2qKxTMB0DuPWIZyhks5QYZvK-qZjyJn7kq-ZOA/viewform" target="_blank" class="text-cyan hover:text-cyan-300 mt-4 inline-block">If you have not find your song, ping us here!</a>
+
+            <div class="mt-16">
+                <a href="{{ url_for('ml') }}" class="text-cyan hover:text-cyan-300 block">Check out our ML Model (Coming Soon!)</a>
+            </div>
+        </div>
+
+        <div id="ratingPage" class="w-full max-w-4xl p-8 relative hidden">
+            <div id="artistImageContainer" class="absolute inset-0 z-0">
+                <div class="gradient-overlay"></div>
+            </div>
+            <div class="rating-page-content">
+                <h1 class="title">TUNE MY MOOD</h1>
+                <div class="grid-container">
+                    <div class="text-center">
+                        <h2 id="songTitle" class="text-3xl mb-2 text-white"></h2>
+                        <h3 id="artistName" class="text-xl mb-8 text-white-80"></h3>
+                        <button id="rateNowButton" class="primary-button">RATE NOW</button>
+                    </div>
+                    <div id="moodSliders" class="space-y-6">
+                        <!-- Mood sliders will be inserted here by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="thankYouPage" class="w-full max-w-3xl p-8 text-center hidden">
+            <h1 class="title">TUNE MY MOOD</h1>
+            <h2 id="thankYouSongTitle" class="text-3xl mb-2 text-white"></h2>
+            <h3 id="thankYouArtistName" class="text-xl mb-8 text-white-80"></h3>
+            <div class="my-12 space-y-4">
+                <p id="ratingMessage" class="text-cyan text-3xl"></p>
+                <p class="text-white text-xl">Thank you for rating the song</p>
+            </div>
+            <button id="rateMoreButton" class="primary-button mb-12">RATE MORE SONGS</button>
+            <div>
+                <p class="text-white mb-4">Share on</p>
+                <div class="share-buttons">
+                    <button class="share-button" data-platform="twitter">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+                        </svg>
+                    </button>
+                    <button class="share-button" data-platform="facebook">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"></path>
+                        </svg>
+                    </button>
+                    <button class="share-button" data-platform="link">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </main>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
