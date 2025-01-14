@@ -606,3 +606,44 @@
         padding-bottom: max(1rem, env(safe-area-inset-bottom));
     }
 }
+
+
+/* Footer styles */
+.footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem;
+    text-align: center;
+    z-index: 10;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.footer-text {
+    color: #ffffff;  /* Changed to solid white */
+    font-size: 0.875rem;
+}
+
+.footer-link {
+    color: #00d4ff;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+    color: #ff2e63;
+}
+
+/* Responsive footer */
+@media (max-width: 768px) {
+    .footer {
+        padding: 0.75rem;
+    }
+    
+    .footer-text {
+        font-size: 0.75rem;
+    }
+}
