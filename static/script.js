@@ -66,97 +66,19 @@ function initializeMoodSliders() {
             const slider = moodSlidersContainer.querySelector(`input[type="range"][data-index="${index}"]`);
             const number = moodSlidersContainer.querySelector(`input[type="number"][data-index="${index}"]`);
 
-            slider.value = value;
-            number.value = value;
-            initialMoods[index].value = Number(value);
+            // Ensure value is within bounds
+            const boundedValue = Math.min(Math.max(Number(value), 0), 5);
+            
+            slider.value = boundedValue;
+            number.value = boundedValue;
+            initialMoods[index].value = boundedValue;
         }
     });
 }
 
-// API Functions
-async function searchSong(artist, song) {
-    if (!artist.trim() || !song.trim()) {
-        throw new Error('Artist and song are required');
-    }
-
-    const formData = new FormData();
-    formData.append('artist', artist.trim());
-    formData.append('song', song.trim());
-
-    try {
-        const response = await fetch('/search_song', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Song search failed');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error searching song:', error);
-        throw error;
-    }
-}
-
-async function getArtistImage(artist) {
-    if (!artist.trim()) {
-        throw new Error('Artist name is required');
-    }
-
-    const formData = new FormData();
-    formData.append('artist', artist.trim());
-
-    try {
-        const response = await fetch('/get_artist_image', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Failed to fetch artist image');
-        }
-
-        const data = await response.json();
-        return data.imageUrl;
-    } catch (error) {
-        console.error('Error fetching artist image:', error);
-        throw error;
-    }
-}
-
-async function rateSong(artist, song, ratings) {
-    if (!artist || !song || !ratings) {
-        throw new Error('Missing required rating data');
-    }
-
-    const formData = new FormData();
-    formData.append('artist', artist);
-    formData.append('song', song);
-    formData.append('ratings', JSON.stringify(ratings));
-
-    try {
-        const response = await fetch('/rate_song', {
-            method: 'POST',
-            body: formData
-        });
-
-        if (!response.ok) {
-            throw new Error('Rating submission failed');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('Error submitting rating:', error);
-        throw error;
-    }
-}
-
-// Add this at the top of your script
+// Image cache and preload functions
 const imageCache = new Map();
 
-// Preload image function
 function preloadImage(url) {
     return new Promise((resolve, reject) => {
         if (imageCache.has(url)) {
@@ -174,15 +96,104 @@ function preloadImage(url) {
     });
 }
 
+// API Functions
+async function searchSong(artist, song) {
+    if (!artist.trim() || !song.trim()) {
+        throw new Error('Artist and song are required');
+    }
+
+    const formData = new FormData();
+    formData.append('artist', artist.trim().toLowerCase());
+    formData.append('song', song.trim().toLowerCase());
+
+    try {
+        const response = await fetch('/search_song', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Song not found. Please check the artist and song name.');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error searching song:', error);
+        throw error;
+    }
+}
+
+async function getArtistImage(artist) {
+    if (!artist.trim()) {
+        throw new Error('Artist name is required');
+    }
+
+    const formData = new FormData();
+    formData.append('artist', artist.trim().toLowerCase());
+
+    try {
+        const response = await fetch('/get_artist_image', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Artist image not found');
+        }
+
+        return data.imageUrl;
+    } catch (error) {
+        console.error('Error fetching artist image:', error);
+        throw error;
+    }
+}
+
+async function rateSong(artist, song, ratings) {
+    if (!artist || !song || !ratings) {
+        throw new Error('Missing required rating data');
+    }
+
+    const formData = new FormData();
+    formData.append('artist', artist.toLowerCase());
+    formData.append('song', song.toLowerCase());
+    formData.append('ratings', JSON.stringify(ratings));
+
+    try {
+        const response = await fetch('/rate_song', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Rating submission failed');
+        }
+
+        return data;
+    } catch (error) {
+        console.error('Error submitting rating:', error);
+        throw error;
+    }
+}
+
 // Event Listeners
 document.getElementById('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const artist = formData.get('artist');
     const song = formData.get('song');
+    const submitButton = e.target.querySelector('button[type="submit"]');
+    const errorDisplay = document.getElementById('searchError') || document.createElement('div');
+    errorDisplay.id = 'searchError';
 
     try {
-        e.target.querySelector('button[type="submit"]').disabled = true;
+        submitButton.disabled = true;
+        errorDisplay.textContent = '';
 
         // Start fetching the image early
         const imagePromise = getArtistImage(artist).then(imageUrl => preloadImage(imageUrl));
@@ -194,9 +205,15 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
             song: searchResult.song
         };
 
-        // Update page content
-        document.getElementById('songTitle').textContent = currentState.songData.song;
-        document.getElementById('artistName').textContent = currentState.songData.artist;
+        // Update page content with capitalized text
+        document.getElementById('songTitle').textContent = 
+            currentState.songData.song.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        document.getElementById('artistName').textContent = 
+            currentState.songData.artist.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
 
         // Wait for image to be ready
         const imageUrl = await imagePromise;
@@ -208,19 +225,30 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
         navigateTo('rating');
     } catch (error) {
         console.error('Error:', error);
-        alert('Error searching for song. Please try again.');
+        errorDisplay.textContent = error.message;
+        errorDisplay.className = 'error-message';
+        if (!errorDisplay.parentNode) {
+            e.target.insertBefore(errorDisplay, e.target.firstChild);
+        }
     } finally {
-        e.target.querySelector('button[type="submit"]').disabled = false;
+        submitButton.disabled = false;
     }
 });
 
 document.getElementById('rateNowButton').addEventListener('click', async () => {
     const button = document.getElementById('rateNowButton');
-    button.disabled = true;
+    const errorDisplay = document.getElementById('ratingError') || document.createElement('div');
+    errorDisplay.id = 'ratingError';
 
     try {
-        // Collect ratings from mood sliders
+        button.disabled = true;
+        errorDisplay.textContent = '';
+
+        // Validate ratings
         const ratings = initialMoods.map(mood => mood.value);
+        if (ratings.every(r => r === 0)) {
+            throw new Error('Please rate at least one mood before submitting');
+        }
 
         const result = await rateSong(
             currentState.songData.artist,
@@ -228,15 +256,24 @@ document.getElementById('rateNowButton').addEventListener('click', async () => {
             ratings
         );
 
-        // Update thank you page
-        document.getElementById('thankYouSongTitle').textContent = currentState.songData.song;
-        document.getElementById('thankYouArtistName').textContent = currentState.songData.artist;
+        // Update thank you page with properly capitalized text
+        document.getElementById('thankYouSongTitle').textContent = 
+            currentState.songData.song.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
+        document.getElementById('thankYouArtistName').textContent = 
+            currentState.songData.artist.split(' ')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+            .join(' ');
         document.getElementById('ratingMessage').textContent = result.message;
 
-        // Navigate to thank you page
         navigateTo('thankYou');
     } catch (error) {
-        alert('Error submitting rating. Please try again.');
+        errorDisplay.textContent = error.message;
+        errorDisplay.className = 'error-message';
+        if (!errorDisplay.parentNode) {
+            button.parentNode.insertBefore(errorDisplay, button);
+        }
     } finally {
         button.disabled = false;
     }
@@ -245,6 +282,7 @@ document.getElementById('rateNowButton').addEventListener('click', async () => {
 document.getElementById('rateMoreButton').addEventListener('click', () => {
     // Reset form and state
     document.getElementById('searchForm').reset();
+    document.getElementById('searchError')?.remove();
     currentState.songData = { artist: '', song: '', ratings: [] };
     initialMoods.forEach(mood => mood.value = 0);
     navigateTo('search');
@@ -279,4 +317,4 @@ document.querySelectorAll('.share-button').forEach(button => {
 
 // Initialize the app
 initializeMoodSliders();
-navigateTo('search');
+navigateTo('search'); 
