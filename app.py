@@ -93,18 +93,25 @@ class SongRatingManager:
         cursor = conn.cursor(cursor_factory=DictCursor)
 
         try:
+            # First check for exact artist match
             cursor.execute("""
                 SELECT * FROM merged_songs 
-                WHERE LOWER(artist) = %s AND LOWER(song) = %s
-            """, (artist, song))
-            result = cursor.fetchone()
+                WHERE LOWER(artist) = %s
+            """, (artist,))
+            artist_songs = cursor.fetchall()
             
-            if result is None:
+            if not artist_songs:
                 return None
                 
-            # Convert result to dictionary
-            result_dict = dict(result)
-            return {'exists': True, 'data': result_dict}
+            # If artist exists, look for partial song match
+            for song_row in artist_songs:
+                db_song = song_row['song'].lower()
+                # If song input length is at least 20% of the actual song name
+                min_length = len(db_song) * 0.2
+                if len(song) >= min_length and song in db_song:
+                    return {'exists': True, 'data': dict(song_row)}
+            
+            return None
         finally:
             cursor.close()
             conn.close()
