@@ -216,12 +216,12 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
             .join(' ');
 
         // Optional: Display source information
-        const sourceInfo = document.createElement('div');
-        sourceInfo.className = 'text-cyan text-sm mt-2';
-        sourceInfo.textContent = currentState.songData.source === 'spotify' 
-            ? 'Song found via Spotify and added to database'
-            : 'Song found in existing database';
-        document.getElementById('artistName').parentNode.appendChild(sourceInfo);
+        //const sourceInfo = document.createElement('div');
+        //sourceInfo.className = 'text-cyan text-sm mt-2';
+        //sourceInfo.textContent = currentState.songData.source === 'spotify' 
+        //    ? 'Song found via Spotify and added to database'
+        //    : 'Song found in existing database';
+        //document.getElementById('artistName').parentNode.appendChild(sourceInfo);
 
         // Wait for image to be ready
         const imageUrl = await imagePromise;
