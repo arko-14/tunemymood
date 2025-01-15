@@ -52,6 +52,20 @@
                     </div>
                 </div>
             </div>
+            <div id="audioControls" class="flex items-center justify-center space-x-4 my-4">
+                <button id="playPauseBtn" class="audio-control-btn">
+                    <svg id="playIcon" class="w-8 h-8" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                    <svg id="pauseIcon" class="w-8 h-8 hidden" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <line x1="6" y1="4" x2="6" y2="20"></line>
+                        <line x1="18" y1="4" x2="18" y2="20"></line>
+                    </svg>
+                </button>
+                <div id="progressBar" class="w-64 h-2 bg-gray-200 rounded-full">
+                    <div id="progress" class="h-full bg-cyan-500 rounded-full" style="width: 0%"></div>
+                </div>
+            </div>
         </div>
 
         <div id="thankYouPage" class="w-full max-w-3xl p-8 text-center hidden">
@@ -92,6 +106,7 @@
                 <a href="https://x.com/futurebeast_04" target="_blank" rel="noopener noreferrer" class="footer-link">
                     @futurebeast_04
                 </a>
+                
             </p>
         </footer>
     </main>
