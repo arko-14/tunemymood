@@ -2,8 +2,55 @@ from flask import Flask, render_template, request, jsonify
 import psycopg2
 from psycopg2.extras import DictCursor
 import os
+import spotipy
+from spotipy.oauth2 import SpotifyClientCredentials
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Spotify API credentials
+SPOTIFY_CLIENT_ID = '86738e072df64352afdd63b9c42e0fac'
+SPOTIFY_CLIENT_SECRET = '448977bf7a2f4111a17c605d91a15f43'
 
 app = Flask(__name__)
+
+class SpotifyManager:
+    def __init__(self):
+        self.spotify = None
+        try:
+            client_credentials_manager = SpotifyClientCredentials(
+                client_id=SPOTIFY_CLIENT_ID,
+                client_secret=SPOTIFY_CLIENT_SECRET
+            )
+            self.spotify = spotipy.Spotify(client_credentials_manager=client_credentials_manager)
+        except Exception as e:
+            logger.error(f"Failed to initialize Spotify client: {e}")
+
+    def search_song(self, artist, song):
+        """Search for a song on Spotify"""
+        try:
+            query = f"artist:{artist} track:{song}"
+            results = self.spotify.search(q=query, type='track', limit=1)
+
+            if results['tracks']['items']:
+                track = results['tracks']['items'][0]
+                artist_name = track['artists'][0]['name']
+                song_name = track['name']
+                year = int(track['album']['release_date'][:4])
+                
+                return {
+                    'exists': True,
+                    'artist': artist_name,
+                    'song': song_name,
+                    'year': year,
+                    'from_spotify': True
+                }
+            return None
+        except Exception as e:
+            logger.error(f"Spotify search error: {e}")
+            return None
 
 class SongRatingManager:
     def __init__(self):
@@ -14,6 +61,8 @@ class SongRatingManager:
             'host': 'dpg-cu2jt89opnds738l28f0-a.oregon-postgres.render.com',
             'port': '5432'
         }
+        self.default_image = "/static/images/default-bg.png"
+        self.spotify_manager = SpotifyManager()
 
     def get_db_connection(self):
         return psycopg2.connect(**self.db_config)
@@ -85,7 +134,29 @@ class SongRatingManager:
             conn.close()
 
     def get_song_ratings(self, artist, song):
-        # Convert inputs to lowercase
+        # First check database
+        db_result = self._check_database(artist, song)
+        if db_result:
+            db_result['source'] = 'database'
+            return db_result
+
+        # If not found in database, try Spotify
+        if self.spotify_manager.spotify:
+            spotify_result = self.spotify_manager.search_song(artist, song)
+            if spotify_result:
+                spotify_result['source'] = 'spotify'
+                # Add the song to our database
+                if self.add_new_song(
+                    spotify_result['artist'],
+                    spotify_result['song'],
+                    spotify_result['year']
+                ):
+                    return spotify_result
+        
+        return None
+
+    def _check_database(self, artist, song):
+        """Check if song exists in database"""
         artist = artist.lower()
         song = song.lower()
         
@@ -93,7 +164,6 @@ class SongRatingManager:
         cursor = conn.cursor(cursor_factory=DictCursor)
 
         try:
-            # First check for exact artist match
             cursor.execute("""
                 SELECT * FROM merged_songs 
                 WHERE LOWER(artist) = %s
@@ -103,13 +173,11 @@ class SongRatingManager:
             if not artist_songs:
                 return None
                 
-            # If artist exists, look for partial song match
             for song_row in artist_songs:
                 db_song = song_row['song'].lower()
-                # If song input length is at least 20% of the actual song name
                 min_length = len(db_song) * 0.2
                 if len(song) >= min_length and song in db_song:
-                    return {'exists': True, 'data': dict(song_row)}
+                    return {'exists': True, 'data': dict(song_row), 'from_spotify': False}
             
             return None
         finally:
@@ -129,7 +197,26 @@ class SongRatingManager:
                 WHERE LOWER(artist) = %s
             """, (artist,))
             result = cursor.fetchone()
-            return result[0] if result else None
+            return result[0] if result else self.default_image
+        finally:
+            cursor.close()
+            conn.close()
+
+    def add_new_song(self, artist, song, year):
+        """Add a new song to the database"""
+        conn = self.get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                INSERT INTO merged_songs (artist, song, year)
+                VALUES (%s, %s, %s)
+            """, (artist.lower(), song.lower(), year))
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Error adding new song: {e}")
+            conn.rollback()
+            return False
         finally:
             cursor.close()
             conn.close()
@@ -147,21 +234,20 @@ def search_song():
     result = rating_manager.get_song_ratings(artist, song)
 
     if result:
-        return jsonify({
-            'exists': True, 
-            'artist': artist, 
-            'song': result['data']['song']
-        })
+        response_data = {
+            'exists': True,
+            'artist': result['artist'] if result.get('from_spotify') else artist,
+            'song': result['song'] if result.get('from_spotify') else result['data']['song'],
+            'source': result.get('source', 'database')
+        }
+        return jsonify(response_data)
     return jsonify({'exists': False, 'error': 'Song not found'}), 404
 
 @app.route('/get_artist_image', methods=['POST'])
 def get_artist_image():
     artist = request.form['artist'].lower()
     image_url = rating_manager.get_artist_image(artist)
-
-    if image_url:
-        return jsonify({'imageUrl': image_url})
-    return jsonify({'error': 'Artist image not found'}), 404
+    return jsonify({'imageUrl': image_url})  # Always returns an image URL now
 
 @app.route('/rate_song', methods=['POST'])
 def rate_song():
