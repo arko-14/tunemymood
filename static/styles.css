@@ -647,3 +647,15 @@
         font-size: 0.75rem;
     }
 }
+
+.audio-control-btn {
+    @apply p-2 rounded-full bg-cyan-500 hover:bg-cyan-600 text-white transition-colors;
+}
+
+#progressBar {
+    @apply bg-gray-700;
+}
+
+#progress {
+    @apply bg-cyan-500 transition-all duration-300 ease-linear;
+}
