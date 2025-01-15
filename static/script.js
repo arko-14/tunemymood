@@ -91,7 +91,11 @@ function preloadImage(url) {
             imageCache.set(url, url);
             resolve(url);
         };
-        img.onerror = reject;
+        img.onerror = () => {
+            // If image loading fails, resolve with default image
+            const defaultImage = '/static/images/default-bg.png';
+            resolve(defaultImage);
+        };
         img.src = url;
     });
 }
@@ -127,7 +131,7 @@ async function searchSong(artist, song) {
 
 async function getArtistImage(artist) {
     if (!artist.trim()) {
-        throw new Error('Artist name is required');
+        return '/static/images/default-bg.png';  // Return default image if no artist
     }
 
     const formData = new FormData();
@@ -140,15 +144,10 @@ async function getArtistImage(artist) {
         });
 
         const data = await response.json();
-
-        if (!response.ok) {
-            throw new Error(data.error || 'Artist image not found');
-        }
-
-        return data.imageUrl;
+        return data.imageUrl;  // Will always have an image URL now
     } catch (error) {
         console.error('Error fetching artist image:', error);
-        throw error;
+        return '/static/images/default-bg.png';  // Return default image on error
     }
 }
 
@@ -202,7 +201,8 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
         const searchResult = await searchSong(artist, song);
         currentState.songData = {
             artist: searchResult.artist,
-            song: searchResult.song
+            song: searchResult.song,
+            source: searchResult.source
         };
 
         // Update page content with capitalized text
@@ -214,6 +214,14 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
             currentState.songData.artist.split(' ')
             .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
             .join(' ');
+
+        // Optional: Display source information
+        const sourceInfo = document.createElement('div');
+        sourceInfo.className = 'text-cyan text-sm mt-2';
+        sourceInfo.textContent = currentState.songData.source === 'spotify' 
+            ? 'Song found via Spotify and added to database'
+            : 'Song found in existing database';
+        document.getElementById('artistName').parentNode.appendChild(sourceInfo);
 
         // Wait for image to be ready
         const imageUrl = await imagePromise;
