@@ -180,6 +180,75 @@ async function rateSong(artist, song, ratings) {
     }
 }
 
+// Audio player functions
+let audioPlayer = null;
+let progressInterval = null;
+let isPlaying = false;
+
+function setupAudioPlayer(previewUrl) {
+    if (!previewUrl) {
+        console.log('No preview URL available');
+        document.getElementById('audioControls').classList.add('hidden');
+        return;
+    }
+
+    document.getElementById('audioControls').classList.remove('hidden');
+    
+    // Create new audio player if needed
+    if (!audioPlayer) {
+        audioPlayer = new Audio();
+    }
+    
+    audioPlayer.src = previewUrl;
+    audioPlayer.volume = 1;
+    
+    // Reset state
+    isPlaying = false;
+    updatePlayPauseButton();
+    
+    // Setup event listeners
+    audioPlayer.addEventListener('ended', handleAudioEnd);
+    audioPlayer.addEventListener('timeupdate', updateProgress);
+}
+
+function updatePlayPauseButton() {
+    const playIcon = document.getElementById('playIcon');
+    const pauseIcon = document.getElementById('pauseIcon');
+    
+    if (isPlaying) {
+        playIcon.classList.add('hidden');
+        pauseIcon.classList.remove('hidden');
+    } else {
+        playIcon.classList.remove('hidden');
+        pauseIcon.classList.add('hidden');
+    }
+}
+
+function updateProgress() {
+    if (!audioPlayer) return;
+    
+    const progress = document.getElementById('progress');
+    const percentage = (audioPlayer.currentTime / audioPlayer.duration) * 100;
+    progress.style.width = `${percentage}%`;
+
+    // Start fade out at 27 seconds (for 30-second preview)
+    if (audioPlayer.currentTime >= 27 && audioPlayer.volume > 0) {
+        audioPlayer.volume = Math.max(0, (30 - audioPlayer.currentTime) / 3);
+    }
+}
+
+function handleAudioEnd() {
+    audioPlayer.currentTime = 0;
+    audioPlayer.volume = 1;
+    
+    // Wait 5 seconds before playing again
+    setTimeout(() => {
+        if (isPlaying) {
+            audioPlayer.play();
+        }
+    }, 5000);
+}
+
 // Event Listeners
 document.getElementById('searchForm').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -216,12 +285,12 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
             .join(' ');
 
         // Optional: Display source information
-        //const sourceInfo = document.createElement('div');
-        //sourceInfo.className = 'text-cyan text-sm mt-2';
-        //sourceInfo.textContent = currentState.songData.source === 'spotify' 
-        //    ? 'Song found via Spotify and added to database'
-        //    : 'Song found in existing database';
-        //document.getElementById('artistName').parentNode.appendChild(sourceInfo);
+        const sourceInfo = document.createElement('div');
+        sourceInfo.className = 'text-cyan text-sm mt-2';
+        sourceInfo.textContent = currentState.songData.source === 'spotify' 
+            ? 'Song found via Spotify and added to database'
+            : 'Song found in existing database';
+        document.getElementById('artistName').parentNode.appendChild(sourceInfo);
 
         // Wait for image to be ready
         const imageUrl = await imagePromise;
@@ -231,6 +300,9 @@ document.getElementById('searchForm').addEventListener('submit', async (e) => {
         // Initialize and navigate
         initializeMoodSliders();
         navigateTo('rating');
+
+        // Setup audio player with preview URL
+        setupAudioPlayer(searchResult.preview_url);
     } catch (error) {
         console.error('Error:', error);
         errorDisplay.textContent = error.message;
@@ -321,6 +393,34 @@ document.querySelectorAll('.share-button').forEach(button => {
                 break;
         }
     });
+});
+
+// Add play/pause button listener
+document.getElementById('playPauseBtn').addEventListener('click', () => {
+    if (!audioPlayer) return;
+    
+    if (isPlaying) {
+        audioPlayer.pause();
+    } else {
+        audioPlayer.volume = 1;
+        audioPlayer.play();
+    }
+    
+    isPlaying = !isPlaying;
+    updatePlayPauseButton();
+});
+
+// Add this to your submitRating function
+document.getElementById('submitRatingBtn').addEventListener('click', async () => {
+    // Stop audio when rating is submitted
+    if (audioPlayer) {
+        audioPlayer.pause();
+        audioPlayer.currentTime = 0;
+        isPlaying = false;
+        updatePlayPauseButton();
+    }
+    
+    // ... rest of your existing submit rating code ...
 });
 
 // Initialize the app
