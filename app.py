@@ -147,7 +147,11 @@ def search_song():
     result = rating_manager.get_song_ratings(artist, song)
 
     if result:
-        return jsonify({'exists': True, 'artist': artist, 'song': song})
+        return jsonify({
+            'exists': True, 
+            'artist': artist, 
+            'song': result['data']['song']
+        })
     return jsonify({'exists': False, 'error': 'Song not found'}), 404
 
 @app.route('/get_artist_image', methods=['POST'])
