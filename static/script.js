@@ -372,20 +372,22 @@ document.getElementById('rateMoreButton').addEventListener('click', () => {
 document.querySelectorAll('.share-button').forEach(button => {
     button.addEventListener('click', async () => {
         const platform = button.dataset.platform;
-        const text = `I just rated "${currentState.songData.song}" by ${currentState.songData.artist} on Tune My Mood!`;
+        const ratingMessage = document.getElementById('ratingMessage').textContent;
+        const text = `Hey I rated "${currentState.songData.song}" by ${currentState.songData.artist}! ${ratingMessage}`;
         const url = window.location.href;
+        const fullMessage = `${text}\nCheck out Tune My Mood at ${url}`;
 
         switch(platform) {
             case 'twitter':
-                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`);
+                window.open(`https://twitter.com/intent/tweet?text=${encodeURIComponent(fullMessage)}`, '_blank');
                 break;
             case 'facebook':
-                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}&quote=${encodeURIComponent(text)}`, '_blank');
                 break;
             case 'link':
                 try {
-                    await navigator.clipboard.writeText(url);
-                    alert('Link copied to clipboard!');
+                    await navigator.clipboard.writeText(fullMessage);
+                    alert('Link and message copied to clipboard!');
                 } catch (error) {
                     console.error('Failed to copy link:', error);
                     alert('Failed to copy link. Please try again.');
