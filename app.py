@@ -156,7 +156,11 @@ class SongRatingManager:
         return None
 
     def _check_database(self, artist, song):
-        """Check if song exists in database"""
+        """
+        Check if song exists in database with two conditions:
+        1. Exact song name match
+        2. If no exact match, then check for 20% partial match
+        """
         artist = artist.lower()
         song = song.lower()
         
@@ -164,6 +168,7 @@ class SongRatingManager:
         cursor = conn.cursor(cursor_factory=DictCursor)
 
         try:
+            # First check for exact artist match
             cursor.execute("""
                 SELECT * FROM merged_songs 
                 WHERE LOWER(artist) = %s
@@ -172,13 +177,19 @@ class SongRatingManager:
             
             if not artist_songs:
                 return None
-                
+
+            # Priority 1: Exact song name match
+            for song_row in artist_songs:
+                if song == song_row['song'].lower():
+                    return {'exists': True, 'data': dict(song_row), 'from_spotify': False}
+
+            # Priority 2: 20% partial match
             for song_row in artist_songs:
                 db_song = song_row['song'].lower()
                 min_length = len(db_song) * 0.2
                 if len(song) >= min_length and song in db_song:
                     return {'exists': True, 'data': dict(song_row), 'from_spotify': False}
-            
+
             return None
         finally:
             cursor.close()
