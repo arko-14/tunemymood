@@ -39,12 +39,14 @@ class SpotifyManager:
                 artist_name = track['artists'][0]['name']
                 song_name = track['name']
                 year = int(track['album']['release_date'][:4])
+                preview_url = track['preview_url']
                 
                 return {
                     'exists': True,
                     'artist': artist_name,
                     'song': song_name,
                     'year': year,
+                    'preview_url': preview_url,
                     'from_spotify': True
                 }
             return None
@@ -134,33 +136,24 @@ class SongRatingManager:
             conn.close()
 
     def get_song_ratings(self, artist, song):
+        """Get song ratings with preview URL"""
         # First check database
         db_result = self._check_database(artist, song)
         if db_result:
-            db_result['source'] = 'database'
             return db_result
 
-        # If not found in database, try Spotify
-        if self.spotify_manager.spotify:
-            spotify_result = self.spotify_manager.search_song(artist, song)
-            if spotify_result:
+        # If not in database, check Spotify
+        spotify_result = self.spotify_manager.search_song(artist, song)
+        if spotify_result:
+            # Add to database if found on Spotify
+            if self.add_new_song(spotify_result['artist'], spotify_result['song'], spotify_result['year']):
                 spotify_result['source'] = 'spotify'
-                # Add the song to our database
-                if self.add_new_song(
-                    spotify_result['artist'],
-                    spotify_result['song'],
-                    spotify_result['year']
-                ):
-                    return spotify_result
-        
+                return spotify_result
+
         return None
 
     def _check_database(self, artist, song):
-        """
-        Check if song exists in database with two conditions:
-        1. Exact song name match
-        2. If no exact match, then check for 20% partial match
-        """
+        """Check if song exists in database with two conditions"""
         artist = artist.lower()
         song = song.lower()
         
@@ -170,8 +163,10 @@ class SongRatingManager:
         try:
             # First check for exact artist match
             cursor.execute("""
-                SELECT * FROM merged_songs 
-                WHERE LOWER(artist) = %s
+                SELECT ms.*, s.preview_url 
+                FROM merged_songs ms
+                LEFT JOIN spotify_previews s ON ms.artist = s.artist AND ms.song = s.song
+                WHERE LOWER(ms.artist) = %s
             """, (artist,))
             artist_songs = cursor.fetchall()
             
@@ -181,14 +176,26 @@ class SongRatingManager:
             # Priority 1: Exact song name match
             for song_row in artist_songs:
                 if song == song_row['song'].lower():
-                    return {'exists': True, 'data': dict(song_row), 'from_spotify': False}
+                    result = dict(song_row)
+                    return {
+                        'exists': True,
+                        'data': result,
+                        'preview_url': result.get('preview_url'),
+                        'from_spotify': False
+                    }
 
             # Priority 2: 20% partial match
             for song_row in artist_songs:
                 db_song = song_row['song'].lower()
                 min_length = len(db_song) * 0.2
                 if len(song) >= min_length and song in db_song:
-                    return {'exists': True, 'data': dict(song_row), 'from_spotify': False}
+                    result = dict(song_row)
+                    return {
+                        'exists': True,
+                        'data': result,
+                        'preview_url': result.get('preview_url'),
+                        'from_spotify': False
+                    }
 
             return None
         finally:
@@ -214,14 +221,26 @@ class SongRatingManager:
             conn.close()
 
     def add_new_song(self, artist, song, year):
-        """Add a new song to the database"""
+        """Add a new song to the database with preview URL"""
         conn = self.get_db_connection()
         cursor = conn.cursor()
         try:
+            # Add to merged_songs
             cursor.execute("""
                 INSERT INTO merged_songs (artist, song, year)
                 VALUES (%s, %s, %s)
             """, (artist.lower(), song.lower(), year))
+
+            # Add preview URL if available
+            spotify_result = self.spotify_manager.search_song(artist, song)
+            if spotify_result and spotify_result.get('preview_url'):
+                cursor.execute("""
+                    INSERT INTO spotify_previews (artist, song, preview_url)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (artist, song) DO UPDATE 
+                    SET preview_url = EXCLUDED.preview_url
+                """, (artist.lower(), song.lower(), spotify_result['preview_url']))
+
             conn.commit()
             return True
         except Exception as e:
@@ -249,7 +268,8 @@ def search_song():
             'exists': True,
             'artist': result['artist'] if result.get('from_spotify') else artist,
             'song': result['song'] if result.get('from_spotify') else result['data']['song'],
-            'source': result.get('source', 'database')
+            'source': result.get('source', 'database'),
+            'preview_url': result.get('preview_url')
         }
         return jsonify(response_data)
     return jsonify({'exists': False, 'error': 'Song not found'}), 404
@@ -310,5 +330,22 @@ def verify_database_structure():
         conn.close()
 
 if __name__ == '__main__':
-    verify_database_structure()  # Run verification before starting the app
+    # Create spotify_previews table if it doesn't exist
+    conn = rating_manager.get_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS spotify_previews (
+                artist TEXT,
+                song TEXT,
+                preview_url TEXT,
+                PRIMARY KEY (artist, song)
+            )
+        """)
+        conn.commit()
+    finally:
+        cursor.close()
+        conn.close()
+
+    verify_database_structure()
     app.run(debug=True)
