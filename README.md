@@ -1,4 +1,4 @@
-# **Mood-Based Song Predictor** 🎵🎶
+# **Tunemymood** 🎵🎶
 
 A web application designed to collect user ratings for songs based on their moods and lay the foundation for predicting songs that match a user's emotional state.
 
@@ -9,9 +9,8 @@ A web application designed to collect user ratings for songs based on their mood
 This project is divided into two versions:
 
 - **Version 1 (V1)**:
-    - A website where users can rate songs based on 5 mood parameters (e.g., happy, calm, energetic, etc.).
+    - A website where users can rate songs based on 7 mood parameters (e.g.,soulful,chill,dramatic,love,sad,exotic,dark).
     - Collects user ratings to analyze how songs resonate with different moods.
-    - Displays aggregated user ratings to provide insights into how others feel about a song.
 - **Version 2 (V2)**:
     - Integrates a machine learning model to predict songs that match the user’s mood in real-time.
     - Provides personalized song recommendations and an enhanced user experience.
@@ -21,9 +20,11 @@ This project is divided into two versions:
 ## **Features**
 
 - Rate songs based on multiple mood categories.
-- View aggregated ratings from other users.
-- Lightweight and efficient database for seamless data storage and retrieval.
+- See where you position at the rating
+- Efficient database for seamless data storage and retrieval.
 - Dynamic and responsive web interface.
+- The database is ever-increasing and linked to spotify's server.
+- A handy feature has been added to install the webapp of the website in your device.
 
 ---
 
@@ -31,10 +32,12 @@ This project is divided into two versions:
 
 | **Component** | **Technology Used** |
 | --- | --- |
-| **Frontend** | HTML, CSS, Bootstrap |
+| **Frontend** | HTML, CSS, Javascript |
 | **Backend** | Python (Flask Framework) |
-| **Database** | SQLite |
-| **Web Scraping** | BeautifulSoup |
+| **Database** | PostgreSQL, AWS S3|
+| **Web Scraping** | Selenium |
+
+
 
 ---
 
@@ -45,8 +48,8 @@ This project is divided into two versions:
 ```bash
 bash
 CopyEdit
-git clone https://github.com/your-username/mood-based-song-predictor.git
-cd mood-based-song-predictor
+git clone https://github.com/arko-14/tunemymood.git
+cd tunemymood
 
 ```
 
@@ -85,23 +88,16 @@ The website will be accessible at `http://127.0.0.1:5000`.
 ## **Usage Instructions**
 
 1. Open the website in your browser.
-2. Browse the list of songs displayed.
-3. Select a song and rate it based on the 5 mood parameters.
-4. View the aggregated ratings for each song.
+2. Search the song which you like.
+3. Select a song and rate it based on the 7 mood parameters.
+4. See where you stand at index of rating.
 
 ---
 
 ## **Future Plans (V2)**
 
 - Integrate a machine learning model to analyze the collected mood data and predict songs that match a user’s emotional state.
-- Enhance the frontend interface for better user engagement.
 - Add support for user authentication to save preferences and personalize recommendations.
-
----
-
-## **Screenshots**
-
-*Add relevant screenshots of your website here.*
 
 ---
 
@@ -121,12 +117,8 @@ This project is licensed under the MIT License. See the LICENSE file for details
 
 If you have any questions, feedback, or ideas, feel free to reach out:
 
-📧 YourEmail@example.com
+📧 psandipan20@gmail.com
 
-🌐 [LinkedIn Profile](https://www.linkedin.com/in/your-profile)
+🌐 [LinkedIn Profile](https://www.linkedin.com/in/sandipan-paul-895915265/)
 
 ---
-
-Feel free to customize this README further based on specific details or links for your project!
-
-4o
